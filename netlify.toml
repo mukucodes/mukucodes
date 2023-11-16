@@ -2,4 +2,4 @@
   command = 'pnpm build'
 
 [context.dev]
-  command = 'pnpm deploy-app-dev'
+  command = 'pnpm deploy-app-prod'
