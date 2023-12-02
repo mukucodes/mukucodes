@@ -22,7 +22,7 @@ export default defineConfig({
 	},
 	search: {
 	    tina: {
-	      indexerToken: 'searchToken',
+	      indexerToken: searchToken,
 	      stopwordLanguages: ['eng'],
 	    },
 	    indexBatchSize: 100,
