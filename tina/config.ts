@@ -3,6 +3,7 @@ import { defineConfig } from 'tinacms'
 
 // Your hosting provider likely exposes this as an environment variable
 const branch = process.env.BRANCH || process.env.HEAD || process.env.VERCEL_GIT_COMMIT_REF || 'main'
+const searchToken = process.env.TINA_SEARCH_TOKEN
 
 export default defineConfig({
 	branch,
@@ -18,6 +19,14 @@ export default defineConfig({
 			mediaRoot: '/src/assets/images',
 			publicFolder: ''
 		}
+	},
+	search: {
+	    tina: {
+	      indexerToken: 'searchToken',
+	      stopwordLanguages: ['eng'],
+	    },
+	    indexBatchSize: 100,
+	    maxSearchIndexFieldLength: 100,
 	},
 	schema: {
 		collections: [
