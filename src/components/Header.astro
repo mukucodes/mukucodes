@@ -6,6 +6,7 @@ import MenuIcon from './icons/MenuIcon.astro'
 import Search from '@/components/Search'
 import TagIcon from './icons/TagIcon.astro'
 import ToggleTheme from './ToggleTheme.astro'
+import PopUp from './PopUp.astro'
 
 // ADD YOUR SOCIAL NETWORKS HERE
 const SOCIALNETWORKS = [
@@ -59,6 +60,14 @@ const SOCIALNETWORKS = [
 	<div class='flex items-center gap-3 md:pl-3' transition:persist='navbar'>
 		<div>
 			<Search />
+		</div>
+		<div>
+			<PopUp
+				timer={30}
+				imageURL={'your image url here'}
+				href={'your link'}
+				description={'the description for aria-label'}
+			/>
 		</div>
 		<ToggleTheme />
 		<button id='astro-header-drawer-button' type='button' class='md:ml-6 md:hidden'>

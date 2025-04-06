@@ -23,6 +23,7 @@
 		"dev": "tinacms dev -c 'astro dev'",
 		"deploy-app-prod": "tinacms build && astro build",
 		"deploy-app-dev": "tinacms dev && astro build",
+		"dev-app-dev": "tinacms dev && astro dev",
 		"start": "astro dev",
 		"build": "astro build",
 		"sync": "astro sync",
