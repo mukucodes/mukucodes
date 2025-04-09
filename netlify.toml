@@ -1,5 +1,7 @@
 [build]
+  environment = { NODE_VERSION = "18.17.1" }
   command = 'pnpm deploy-app-prod'
 
-[context.dev]
+[build]
+  environment = { NODE_VERSION = "18.17.1" }
   command = 'pnpm deploy-app-prod'
