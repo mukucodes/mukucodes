@@ -1,0 +1,194 @@
+---
+import CloseButton from './CloseButton.astro'
+const { timer, imageURL, href, description } = Astro.props
+
+if (!timer) {
+	throw new Error('Timer attribute is a must.')
+} else if (!imageURL) {
+	throw new Error('ImageURL attribute is a must.')
+} else if (!href) {
+	throw new Error('href attribute is a must.')
+} else if (!description) {
+	throw new Error('description attribute is a must.')
+}
+---
+
+<pop-up
+	role='dialog'
+	aria-modal='false'
+	aria-label={description}
+	data-message={timer}
+	class='IHNA-popup hidden w-screen h-screen backdrop-blur-sm bg-opacity-50 bg-gray-500 top-0 left-0 z-[9999] fixed'
+>
+	<div
+		class='popup-content w-11/12 aspect-square bg-white -translate-y-1/2 top-1/2 rounded-lg -translate-x-1/2 left-1/2 absolute isolate overflow-clip p-2 sm:w-1/2 2xl:w-1/3 max-w-4xl'
+	>
+		<CloseButton id='test' customClass='popclose absolute right-3 top-3 left-auto z-10' />
+		<a href={href}><img src={imageURL} alt='' class='w-full h-full' /></a>
+		<div class='mt-4 p-4 bg-gray-100 rounded-md'>
+			<h3 class='text-lg font-bold mb-2'>Stay Updated!</h3>
+			<form id='subscribeForm' class='flex flex-col space-y-2'>
+				<input
+					type='email'
+					id='email'
+					placeholder='Enter your email'
+					class='p-2 rounded-md border border-gray-300'
+				/>
+				<button type='submit' class='bg-AtomicTangerine-900 text-blue py-2 px-4 rounded-md'
+					>Subscribe Now</button
+				>
+			</form>
+			<div id='subscribeResult' class='text-sm'></div>
+		</div>
+	</div>
+</pop-up>
+
+<script>
+	class PopUp extends HTMLElement {
+		timer: number
+		boundHandleOutsideClick: (e: any) => void
+		boundHandleEscapeKey: (e: any) => void
+		boundClosePop: () => void
+		boundHandleFormSubmit: (e: any) => void
+		popUpClose: any
+		subscribeForm: any
+
+		constructor() {
+			super()
+			if (this.getAttribute('data-message')) {
+				this.timer = parseInt(this.getAttribute('data-message'))
+			} else {
+				this.timer = 0
+			}
+
+			// Bind the event handlers once and store them
+			this.boundHandleOutsideClick = this.handleOutsideClick.bind(this)
+			this.boundHandleEscapeKey = this.handleEscapeKey.bind(this)
+			this.boundClosePop = this.closePop.bind(this)
+			this.boundHandleFormSubmit = this.handleFormSubmit.bind(this)
+		}
+
+		connectedCallback() {
+			setTimeout(() => {
+				this.popUpClose = this.shadowRoot
+					? this.shadowRoot.querySelector('.popup-content > div > button')
+					: this.querySelector(':scope > .popup-content > div > button')
+
+				if (!this.popUpClose) {
+					console.error('Close button not found')
+					return
+				}
+
+				this.subscribeForm = this.querySelector('#subscribeForm')
+
+				if (!this.subscribeForm) {
+					console.error('Subscribe form not found')
+					return
+				}
+
+				// Use the bound function for the close button as well
+				this.popUpClose.addEventListener('click', this.boundClosePop)
+				this.subscribeForm.addEventListener('submit', this.boundHandleFormSubmit)
+
+				// Check if popup should be shown based on cookie
+				if (document.cookie.includes('popupDismissed')) {
+					this.closePop()
+					return
+				}
+
+				// Check if popup should be shown based on cookie before opening
+				if (!document.cookie.includes('popupDismissed')) {
+					this.openPop()
+				}
+
+				// Add the event listeners using the bound handlers
+				this.addEventListener('click', this.boundHandleOutsideClick)
+				document.addEventListener('keydown', this.boundHandleEscapeKey)
+			}, this.timer * 1000)
+		}
+
+		disconnectedCallback() {
+			// Remove the event listeners using the bound handlers
+			if (this.popUpClose) {
+				this.popUpClose.removeEventListener('click', this.boundClosePop)
+			}
+			if (this.subscribeForm) {
+				this.subscribeForm.removeEventListener('submit', this.boundHandleFormSubmit)
+			}
+			this.removeEventListener('click', this.boundHandleOutsideClick)
+			document.removeEventListener('keydown', this.boundHandleEscapeKey)
+
+			// If you have other cleanup tasks, add them here
+		}
+
+		handleOutsideClick(e: { target: Node | null }) {
+			if (!this.querySelector('.popup-content').contains(e.target)) {
+				this.closePop()
+			}
+		}
+
+		handleEscapeKey(e: { key: string }) {
+			if (e.key === 'Escape') {
+				this.closePop()
+			}
+		}
+
+		openPop() {
+			this.classList.remove('hidden')
+			this.classList.add('fade-in')
+			this.disableScroll()
+			this.setAttribute('aria-modal', 'true')
+		}
+
+		closePop() {
+			this.classList.add('hidden')
+			this.classList.remove('fade-in')
+			this.enableScroll()
+			this.setAttribute('aria-modal', 'false')
+			this.setCookie('popupDismissed', 'true', 30) // Set cookie for 30 days
+		}
+
+		disableScroll() {
+			document.body.style.overflow = 'hidden'
+		}
+
+		enableScroll() {
+			document.body.style.overflow = ''
+		}
+
+		handleFormSubmit(e: any) {
+			const emailInput = this.querySelector('#email')
+			const emailValue = emailInput.value
+			// Implement your form submission logic here
+			fetch('/api/subscribers', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ email: emailValue })
+			})
+				.then(async (response) => {
+					if (response.status === 200) {
+						document.getElementById('subscribeResult').innerHTML = 'Subscribed successfully!'
+						this.closePop()
+						this.setCookie('popupDismissed', 'true', 30) // Set cookie for 30 days
+					} else {
+						document.getElementById('subscribeResult').innerHTML = 'Error subscribing.'
+					}
+				})
+				.catch((error) => {
+					console.error('Error:', error)
+					document.getElementById('subscribeResult').innerHTML = 'Something went wrong!'
+				})
+		}
+
+		setCookie(name: string, value: string, days: number) {
+			const date = new Date()
+			date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000)
+			const expires = `expires=${date.toUTCString()}`
+			document.cookie = `${name}=${value}; ${expires}; path=/`
+		}
+	}
+
+	customElements.define('pop-up', PopUp)
+</script>
