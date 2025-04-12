@@ -77,7 +77,8 @@
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
-			"sharp"
+			"sharp",
+			"better-sqlite3"
 		]
 	}
 }
