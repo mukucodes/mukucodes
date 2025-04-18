@@ -1,10 +1,17 @@
 ---
-const { width = 79, height = 100 } = Astro.props
+export interface Props {
+	width: number
+	height: number
+	logoImage?: string | undefined
+}
+
+const { width = 79, height = 100, logoImage } = Astro.props
+const logoURL = new URL(logoImage ? logoImage : '/logo.svg', Astro.url).href
 ---
 
 <img
-	src='/logo.svg'
-	alt='MukuCodes Logo'
+	src={logoURL}
+	alt=''
 	width={width}
 	height={height}
 	class='shape-icon transition-all duration-300 ease-in-out dark:invert'
