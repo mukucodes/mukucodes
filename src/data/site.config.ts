@@ -1,4 +1,5 @@
 interface SiteConfig {
+	site: string
 	author: string
 	title: string
 	description: string
@@ -9,9 +10,10 @@ interface SiteConfig {
 }
 
 export const siteConfig: SiteConfig = {
-	author: 'DanielCG', // Site author
-	title: 'Astro Theme OpenBlog', // Site title.
-	description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', // Description to display in the meta tags
+	site: 'https://mukucodes.com/', // Write here your website url
+	author: 'MukuCodes', // Site author
+	title: 'MukuCodes', // Site title.
+	description: 'Latest in Tech, programming, AI for engineers by engineers.', // Description to display in the meta tags
 	lang: 'en-GB',
 	ogLocale: 'en_GB',
 	shareMessage: 'Share this post', // Message to share a post on social media

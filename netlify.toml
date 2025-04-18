@@ -1,4 +1,5 @@
 [build]
+<<<<<<< HEAD
   command = "pnpm deploy-app-prod"
   environment = { NODE_VERSION = "18.17.1" }
 
@@ -7,3 +8,6 @@
 
 [context.dev]
   command = "pnpm deploy-app-prod"
+=======
+  command = 'pnpm build'
+>>>>>>> upstream/main

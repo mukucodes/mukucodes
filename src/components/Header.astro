@@ -1,28 +1,16 @@
 ---
 import HeaderLink from '@/components/HeaderLink'
-import TwitterIcon from '@/components/icons/TwitterIcon'
-import GithubIcon from '@/components/icons/GithubIcon'
 import MenuIcon from './icons/MenuIcon.astro'
 import Search from '@/components/Search'
 import TagIcon from './icons/TagIcon.astro'
 import ToggleTheme from './ToggleTheme.astro'
+import { SOCIALNETWORKS } from '@/data/links'
 import PopUp from './PopUp.astro'
-
-// ADD YOUR SOCIAL NETWORKS HERE
-const SOCIALNETWORKS = [
-	{
-		name: 'Twitter',
-		url: 'https://twitter.com/mukucodes',
-		icon: TwitterIcon
-	}
-]
 ---
 
 <header class='relative flex items-center h-12 font-semibold'>
-	<!-- Left: Home Link -->
 	<a class='text-lg mr-auto' href='/'>Home</a>
 
-	<!-- Right: Other Header Content -->
 	<div
 		id='astro-header-drawer'
 		class='shadow rounded-l-lg md:bg-transparent dark:md:bg-transparent bg-white dark:bg-[#0a0910] md:shadow-none md:rounded-none md:border-none md:h-auto md:static absolute transition-transform duration-300 ease-in translate-x-96 md:translate-x-0 top-12 -right-5 pl-4 pt-6 pb-4 md:p-0 h-[200px] w-[200px] z-50'
