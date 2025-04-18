@@ -1,6 +1,8 @@
 ---
 import CloseButton from './CloseButton.astro'
+import { Image } from 'astro:assets'
 const { timer, imageURL, href, description } = Astro.props
+import logoImage from '../assets/images/MukuCodes logo 2.png' // Import the specific image'
 
 if (!timer) {
 	throw new Error('Timer attribute is a must.')
@@ -24,7 +26,7 @@ if (!timer) {
 		class='popup-content w-11/12 aspect-square bg-white -translate-y-1/2 top-1/2 rounded-lg -translate-x-1/2 left-1/2 absolute isolate overflow-clip p-2 sm:w-1/2 2xl:w-1/3 max-w-4xl'
 	>
 		<CloseButton id='test' customClass='popclose absolute right-3 top-3 left-auto z-10' />
-		<a href={href}><img src={imageURL} alt='' class='w-full h-full' /></a>
+		<a href={href}> <Image src={logoImage} alt='' class='w-full h-full' /></a>
 		<div class='mt-4 p-4 bg-gray-100 rounded-md'>
 			<h3 class='text-lg font-bold mb-2'>Stay Updated!</h3>
 			<form id='subscribeForm' class='flex flex-col space-y-2'>

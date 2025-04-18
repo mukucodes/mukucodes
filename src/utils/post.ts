@@ -1,9 +1,14 @@
 import { getCollection } from 'astro:content'
+import { CATEGORIES } from '@/data/categories'
 
 export const getCategories = async () => {
 	const posts = await getCollection('blog')
-	const categories = new Set(posts.map((post) => post.data.category))
-	return Array.from(categories)
+	const categories = new Set(
+		posts.filter((post) => !post.data.draft).map((post) => post.data.category)
+	)
+	return Array.from(categories).sort((a, b) =>
+		CATEGORIES.indexOf(a) < CATEGORIES.indexOf(b) ? -1 : 1
+	)
 }
 
 export const getPosts = async (max?: number) => {
@@ -15,16 +20,33 @@ export const getPosts = async (max?: number) => {
 
 export const getTags = async () => {
 	const posts = await getCollection('blog')
-	const tags = new Set(posts.map((post) => post.data.tags).flat())
+	const tags = new Set()
+	posts
+		.filter((post) => !post.data.draft)
+		.forEach((post) => {
+			post.data.tags.forEach((tag) => {
+				if (tag != '') {
+					tags.add(tag.toLowerCase())
+				}
+			})
+		})
+
 	return Array.from(tags)
 }
 
 export const getPostByTag = async (tag: string) => {
 	const posts = await getPosts()
-	return posts.filter((post) => post.data.tags.includes(tag))
+	const lowercaseTag = tag.toLowerCase()
+	return posts
+		.filter((post) => !post.data.draft)
+		.filter((post) => {
+			return post.data.tags.some((postTag) => postTag.toLowerCase() === lowercaseTag)
+		})
 }
 
 export const filterPostsByCategory = async (category: string) => {
 	const posts = await getPosts()
-	return posts.filter((post) => post.data.category.toLowerCase() === category)
+	return posts
+		.filter((post) => !post.data.draft)
+		.filter((post) => post.data.category.toLowerCase() === category)
 }
