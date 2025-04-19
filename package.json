@@ -45,7 +45,7 @@
 		"astro-font": "^0.0.72"
 	},
 	"devDependencies": {
-		"@astrojs/mdx": "4.2.3",
+		"@astrojs/mdx": "4.2.4",
 		"@astrojs/sitemap": "3.0.5",
 		"@astrojs/tailwind": "5.0.1",
 		"@pagefind/default-ui": "^1.0.3",
