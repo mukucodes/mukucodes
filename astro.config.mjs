@@ -10,6 +10,9 @@ export default defineConfig({
   site: siteConfig.site, // Write here your website url
   output: 'static', // Use server output for hybrid mode
   adapter: netlify(),
+  experimental: {
+    session: true
+  },
   markdown: {
     remarkPlugins: [remarkReadingTime],
     drafts: true,
@@ -21,13 +24,13 @@ export default defineConfig({
   integrations: [
     mdx({
       syntaxHighlight: 'shiki',
-			shikiConfig: {
-				experimentalThemes: {
-					light: 'vitesse-light',
-					dark: 'material-theme-palenight',
-				  },
-				wrap: true
-			},
+      shikiConfig: {
+        experimentalThemes: {
+          light: 'vitesse-light',
+          dark: 'material-theme-palenight',
+        },
+        wrap: true
+      },
       drafts: true
     }),
     sitemap(),
