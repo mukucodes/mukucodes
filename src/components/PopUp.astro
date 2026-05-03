@@ -23,11 +23,10 @@ if (!timer) {
 	class='IHNA-popup hidden w-screen h-screen backdrop-blur-sm bg-opacity-50 bg-gray-500 top-0 left-0 z-[9999] fixed'
 >
 	<div
-		class='popup-content w-11/12 h-[500px]  aspect-square bg-white -translate-y-1/2 top-1/2 rounded-lg -translate-x-1/2 left-1/2 absolute isolate overflow-clip p-2 sm:w-1/2 2xl:w-1/3 max-w-4xl'
+		class='popup-content w-11/12 h-[500px] aspect-square bg-white -translate-y-1/2 top-1/2 rounded-lg -translate-x-1/2 left-1/2 absolute isolate overflow-clip p-2 sm:w-1/2 2xl:w-1/3 max-w-4xl'
 	>
 		<CloseButton id='test' customClass='popclose absolute right-3 top-3 left-auto z-10' />
-		<a href={href}> <Image src={logoImage} alt=''
-		 class='w-full h-1/2' /></a>
+		<a href={href}> <Image src={logoImage} alt='' class='w-full h-1/2' /></a>
 		<div class='mt-4 p-4 bg-gray-100 rounded-md'>
 			<h1 class='text-lg font-bold mb-2 text-black'>Stay Updated!</h1>
 			<form id='subscribeForm' class='flex flex-col space-y-2'>
@@ -37,7 +36,7 @@ if (!timer) {
 					placeholder='Enter your email'
 					class='p-2 rounded-md border border-gray-300'
 				/>
-				<button type='submit' class='bg-indigo-500  text-white border py-2 px-4 rounded-md '
+				<button type='submit' class='bg-indigo-500 text-white border py-2 px-4 rounded-md'
 					>Subscribe Now</button
 				>
 			</form>
@@ -59,7 +58,7 @@ if (!timer) {
 		constructor() {
 			super()
 			if (this.getAttribute('data-message')) {
-				this.timer = parseInt(this.getAttribute('data-message'))
+				this.timer = parseInt(this.getAttribute('data-message') ?? '5000')
 			} else {
 				this.timer = 0
 			}
@@ -125,7 +124,8 @@ if (!timer) {
 		}
 
 		handleOutsideClick(e: { target: Node | null }) {
-			if (!this.querySelector('.popup-content').contains(e.target)) {
+			const popupContent = this.querySelector('.popup-content')
+			if (!popupContent?.contains(e.target as Node)) {
 				this.closePop()
 			}
 		}
@@ -159,10 +159,11 @@ if (!timer) {
 			document.body.style.overflow = ''
 		}
 
-		handleFormSubmit(e: any) {
-			const emailInput = this.querySelector('#email')
-			const emailValue = emailInput.value
+		handleFormSubmit(_e: Event) {
+			const emailInput = this.querySelector<HTMLInputElement>('#email')
+			const emailValue = emailInput?.value ?? ''
 			// Implement your form submission logic here
+			const resultEl = document.getElementById('subscribeResult')
 			fetch('/api/subscribers', {
 				method: 'POST',
 				headers: {
@@ -171,17 +172,18 @@ if (!timer) {
 				body: JSON.stringify({ email: emailValue })
 			})
 				.then(async (response) => {
+					if (!resultEl) return
 					if (response.status === 200) {
-						document.getElementById('subscribeResult').innerHTML = 'Subscribed successfully!'
+						resultEl.innerHTML = 'Subscribed successfully!'
 						this.closePop()
 						this.setCookie('popupDismissed', 'true', 30) // Set cookie for 30 days
 					} else {
-						document.getElementById('subscribeResult').innerHTML = 'Error subscribing.'
+						resultEl.innerHTML = 'Error subscribing.'
 					}
 				})
 				.catch((error) => {
 					console.error('Error:', error)
-					document.getElementById('subscribeResult').innerHTML = 'Something went wrong!'
+					if (resultEl) resultEl.innerHTML = 'Something went wrong!'
 				})
 		}
 

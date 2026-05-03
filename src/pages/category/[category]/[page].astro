@@ -1,43 +1,44 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout'
-import ListPosts from '@/components/ListPosts'
-import ListCategories from '@/components/ListCategories'
-import TitlePage from '@/components/TitlePage'
-import { sluglify, unsluglify, getCategories, getPosts } from '@/utils'
-import { siteConfig } from '@/data/site.config'
-import Pagination from '@/components/Pagination'
+import type { GetStaticPaths } from 'astro'
 
-export async function getStaticPaths({ paginate }: any) {
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ListPosts from '../../../components/ListPosts.astro'
+import ListCategories from '../../../components/ListCategories.astro'
+import TitlePage from '../../../components/TitlePage.astro'
+import Pagination from '../../../components/Pagination.astro'
+
+import { sluglify, getCategories, getPosts } from '../../../utils/index.ts'
+import { siteConfig } from '../../../data/site.config.ts'
+
+export const getStaticPaths = (async ({ paginate }) => {
 	const categories = await getCategories()
 	const allPosts = await getPosts()
 
 	return categories.flatMap((category: string) => {
-		const unsluglifyNameCategory = unsluglify(category!.toLowerCase())
-		const filteredPosts = allPosts.filter(
-			(post) => post.data.category.toLowerCase() === unsluglifyNameCategory
-		)
+		const categorySlug = sluglify(category)
+		const filteredPosts = allPosts.filter((post) => sluglify(post.data.category) === categorySlug)
 
 		return paginate(filteredPosts, {
 			params: {
-				category: sluglify(category.toLowerCase())
+				category: categorySlug
 			},
 			pageSize: siteConfig.paginationSize
 		})
 	})
-}
-const params = Astro.params
-const { page } = Astro.props
+}) satisfies GetStaticPaths
 
-const unsluglifyNameCategory = unsluglify(params.category!.toLowerCase())
-const categoryName = (await getCategories()).find(
-	(category) => category.toLowerCase() === unsluglifyNameCategory
-)
+const { page } = Astro.props
+const { category } = Astro.params
+
+const categories = await getCategories()
+const categoryName = categories.find((item) => sluglify(item) === category) ?? 'Category'
+
 const posts = page.data
 ---
 
 <BaseLayout title={categoryName}>
 	<TitlePage title={categoryName} />
-	<ListCategories activeCategory={params.category} />
+	<ListCategories activeCategory={category} />
 	<ListPosts posts={posts} />
 	<Pagination page={page} />
 </BaseLayout>

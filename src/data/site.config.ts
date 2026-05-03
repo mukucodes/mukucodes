@@ -16,6 +16,6 @@ export const siteConfig: SiteConfig = {
 	description: 'Latest in Tech, programming, AI for engineers by engineers.', // Description to display in the meta tags
 	lang: 'en-GB',
 	ogLocale: 'en_GB',
-	shareMessage: 'Share this post', // Message to share a post on social media
+	shareMessage: 'Share this post', // Message to share a pgost on social media
 	paginationSize: 6 // Number of posts per page
 }

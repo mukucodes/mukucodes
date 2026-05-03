@@ -1,14 +1,15 @@
 ---
 import Title from './Title.astro'
 import Shape from './icons/Shape.astro'
-type Props = {
+
+interface Props {
 	title: string
 }
 
 const { title } = Astro.props
 ---
 
-<div class='flex justify-start items-center gap-2 title'>
+<div class='title flex items-center justify-start gap-2'>
 	<Shape />
 	<Title>{title}</Title>
 </div>
