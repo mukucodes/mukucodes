@@ -1,5 +1,6 @@
 ---
-const { width = 79, height = 100 } = Astro.props
+const width = Astro.props.width ?? 79
+const height = Astro.props.height ?? 100
 ---
 
 <img

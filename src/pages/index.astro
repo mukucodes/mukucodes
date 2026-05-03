@@ -1,18 +1,19 @@
 ---
-import ListCategories from '@/components/ListCategories'
-import ListPosts from '@/components/ListPosts'
-import TitlePage from '@/components/TitlePage'
-import BaseLayout from '@/layouts/BaseLayout'
-import { getPosts } from '@/utils'
-import { siteConfig } from '@/site-config'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ListCategories from '../components/ListCategories.astro'
+import ListPosts from '../components/ListPosts.astro'
+import { getPosts } from '../utils/index.ts'
+import TitlePage from '../components/TitlePage.astro'
+import { siteConfig } from '../data/site.config.ts'
 
-const MAX_POSTS = 5 // max number of posts to show on the home page
+const MAX_POSTS = 5
+
 const posts = await getPosts(MAX_POSTS)
 ---
 
-<BaseLayout title='Home'>
+<BaseLayout title='Home' description={siteConfig.description}>
 	<TitlePage title={siteConfig.title} />
-	<ListCategories />
+	<ListCategories activeCategory='View All' />
 
 	<div>
 		<h2 class='text-lg font-medium tracking-wide text-end'>Latest Posts</h2>
@@ -21,19 +22,13 @@ const posts = await getPosts(MAX_POSTS)
 </BaseLayout>
 
 <script>
-	import { animate } from 'motion'
+	import { animate, stagger } from 'motion'
+
 	const showAnimations = localStorage.getItem('animations') === 'true'
 
 	if (showAnimations) {
-		animate(
-			'.title',
-			{ y: [80, 0], opacity: [0, 1] },
-			{
-				duration: 2.5,
-				opacity: { duration: 3 },
+		animate('.title', { y: [40, 0], opacity: [0, 1] }, { duration: 0.8 })
 
-				offset: [0, 0.55, 0.75]
-			}
-		)
+		animate('.post-card', { y: [24, 0], opacity: [0, 1] }, { duration: 0.6, delay: stagger(0.08) })
 	}
 </script>

@@ -1,0 +1,237 @@
+---
+title: 'Deploying Qwen3-32B with SGLang on RunPod'
+description: 'A complete engineering walkthrough for deploying Qwen3-32B on RunPod using SGLang for extreme throughput.'
+pubDate: '2026-04-23'
+heroImage: '../../assets/images/runpod-qwen3-setup-hero.png'
+category: 'AI-ML'
+tags: ['RunPod', 'Qwen3', 'SGLang', 'GPU', 'LLM', 'self-hosting']
+relatedPosts: false
+draft: false
+---
+
+Deploying a 32-billion parameter model like Qwen3-32B locally requires serious hardware, but cloud GPU platforms like RunPod offer a cost-effective alternative. However, getting the maximum performance out of a single 48GB RTX A6000 requires more than just running a basic Docker container.
+
+In this engineering guide, we will deploy **SGLang** for blistering fast multi-turn chat, tool calling, and structured reasoning.
+
+We'll configure everything on a persistent volume so you only download and build once, allowing you to spin the compute up and down to save costs.
+
+---
+
+## 1. Prerequisites: RunPod Setup
+
+If you don't already have a RunPod account, set one up and prepare your billing.
+
+1. Create an account at [runpod.io](https://www.runpod.io) and enable two-factor authentication.
+2. Navigate to **Billing** and add **$25** in initial credits. At ~$0.33/hr for a community A6000, this gives you ~75 hours of compute—plenty of runway for setup and testing.
+3. **Pro-tip:** Enable **Auto-Pay** (e.g., reload $25 when balance drops below $5). RunPod will terminate your pod instantly if you run out of credits mid-session. Manage your costs by stopping the pod when you aren't using it rather than relying on an empty balance.
+
+## 2. Architecting the Environment
+
+To make our deployments reproducible and fast, we'll create a Custom Template. This binds our preferred Docker image, ports, and environment variables together.
+
+Navigate to **Templates** > **+ New Template** and configure the following:
+
+| Field                 | Value                           |
+| --------------------- | ------------------------------- |
+| **Template Name**     | `Qwen3-32B-SGLang`              |
+| **Container Image**   | `lmsysorg/sglang:v0.5.10.post1` |
+| **Container Disk**    | `20` GB                         |
+| **Volume Disk**       | `50` GB                         |
+| **Volume Mount Path** | `/workspace`                    |
+| **Expose HTTP Ports** | `30000`                         |
+| **Expose TCP Ports**  | `22`                            |
+
+**Why this image?** We use the `lmsysorg/sglang` image because it comes pre-baked with CUDA 12.6, PyTorch, FlashInfer, and essential build tools (`cmake`/`gcc`), saving us from having to configure a raw Ubuntu environment from scratch.
+
+### The SSH Bootstrap Command
+
+RunPod's Web Terminal is incredibly convenient, but the SGLang base image lacks an SSH server. Paste the following into the **Docker Command** field to bootstrap SSH on boot:
+
+```bash
+bash -c "export DEBIAN_FRONTEND=noninteractive && apt-get update > /dev/null 2>&1 && apt-get install -y openssh-server > /dev/null 2>&1 && mkdir -p /run/sshd && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && echo 'root:root' | chpasswd && /usr/sbin/sshd && sleep infinity"
+```
+
+### Environment Variables
+
+Under **Environment Variables**, add the following to ensure HuggingFace downloads directly to our persistent volume (saving us from re-downloading 40GB of weights every time we start the pod):
+
+- `HF_HOME` = `/workspace/huggingface`
+- `TRANSFORMERS_CACHE` = `/workspace/huggingface`
+- `HF_TOKEN` = _(Your token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens))_
+
+Click **Save Template**.
+
+## 3. Deploying the Compute
+
+1. Go to **Pods** > **+ Deploy**.
+2. Select **Community Cloud** and find the **RTX A6000 48GB** (GPU Count: 1).
+3. Click **Change Template** and select your `Qwen3-32B-SGLang` template.
+4. Click **Deploy On-Demand**.
+
+> **Note on Storage:** We use Community Cloud and a Volume Disk for budget reasons. If you require absolute data safety (portability between different pods), Secure Cloud Network Volumes are an option, but expect GPU costs to be ~48% higher.
+
+## 4. Provisioning Models
+
+Once the pod is `Running` (usually 30-60 seconds), click **Connect** > **Open Web Terminal**.
+
+We need to download the weights for our engine. Run the following commands. The `hf` CLI is pre-installed in the SGLang image.
+
+```bash
+# SGLang engine model (AWQ 4-bit, ~18GB)
+hf download Qwen/Qwen3-32B-AWQ --local-dir /workspace/models/Qwen3-32B-AWQ
+
+# Optional: EAGLE-3 draft model for future speculative decoding (~1GB)
+hf download nex-agi/SGLANG-EAGLE3-Qwen3-32B-Nex-N1 --local-dir /workspace/models/eagle3-qwen3-32b
+```
+
+Because these files are stored in `/workspace`, they persist across pod restarts.
+
+## 5. The Launch Script
+
+We will create a script to launch SGLang.
+
+```bash
+cat > /workspace/start_sglang.sh << 'SCRIPT'
+#!/bin/bash
+export HF_HOME=/workspace/huggingface
+sglang serve \
+  --model-path /workspace/models/Qwen3-32B-AWQ \
+  --host 0.0.0.0 \
+  --port 30000 \
+  --mem-fraction-static 0.88 \
+  --context-length 32768 \
+  --chunked-prefill-size 4096 \
+  --reasoning-parser qwen3 \
+  --tool-call-parser qwen \
+  --enable-hierarchical-cache \
+  --hicache-size 40 \
+  --max-running-requests 4 \
+  --log-level info
+SCRIPT
+chmod +x /workspace/start_sglang.sh
+```
+
+_(Note: The `--reasoning-parser` and `--tool-call-parser` flags are critical here. Without them, SGLang will return raw `<thought>` XML tags instead of cleanly separating reasoning content in the API response.)_
+
+Fire up SGLang to begin testing: `bash /workspace/start_sglang.sh`
+
+---
+
+## 6. Verifying the API
+
+Once the server indicates it is ready, test the deployment using the RunPod proxy URL or directly via `localhost` in the terminal.
+
+### Basic Chat Completion
+
+**Request:**
+
+```bash
+curl http://localhost:30000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3-32b-awq",
+    "messages": [
+      {"role": "user", "content": "Write a hello world in Python."}
+    ],
+    "temperature": 0.0
+  }'
+```
+
+**Response:**
+
+````json
+{
+	"id": "chat-45892375892374",
+	"object": "chat.completion",
+	"created": 1713900000,
+	"model": "qwen3-32b-awq",
+	"choices": [
+		{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "```python\nprint(\"Hello, World!\")\n```"
+			},
+			"finish_reason": "stop"
+		}
+	],
+	"usage": {
+		"prompt_tokens": 12,
+		"total_tokens": 20,
+		"completion_tokens": 8
+	}
+}
+````
+
+### Thinking Mode Test (Chain of Thought)
+
+Because we included `--reasoning-parser qwen3` in our SGLang script, the server correctly parses internal thought processes into a dedicated `reasoning_content` field.
+
+**Request:**
+
+```bash
+curl -X POST "http://localhost:30000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3-32b-awq",
+    "messages": [
+      {"role": "user", "content": "/think\nExplain why quicksort has O(n²) worst case"}
+    ],
+    "temperature": 0.7,
+    "max_tokens": 2048
+  }'
+```
+
+**Response:**
+The API response includes the model ID, choices, and usage metrics. Because we enabled the reasoning parser, the assistant's internal thought process is returned in the `reasoning_content` field, while the final answer is in `content`.
+
+**Key takeaways from the test:**
+
+- **Model:** `qwen3-32b-awq`
+- **Reasoning:** Quicksort's worst case of O(n²) happens when pivot selection is poor, leading to unbalanced partitions.
+- **Tokens:** ~1700 completion tokens (including chain-of-thought).
+
+### Tool Calling Test
+
+Qwen3 is highly capable of structured tool calling. Because we configured `--tool-call-parser qwen`, SGLang transforms the raw generation into an OpenAI-compatible `tool_calls` object.
+
+**Request:**
+
+```bash
+curl -X POST "http://localhost:30000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3-32b-awq",
+    "messages": [
+      {
+        "role": "user",
+        "content": "what is the weather in NYC?"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather for a location",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            },
+            "required": ["location"]
+          }
+        }
+      }
+    ]
+  }'
+```
+
+**Response:**
+The model correctly identifies the need for a tool call and returns a `tool_calls` object with the function name `get_weather` and the argument `{"location": "NYC"}`. This confirms that SGLang is correctly parsing the model's output into a structured format.
+
+---
+
+With SGLang configured, you maximize the utility of a single GPU. You now have a production-ready, flexible Qwen3-32B backend. Happy building!
