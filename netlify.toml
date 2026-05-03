@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm deploy-app-prod"
+  command = "pnpm build"
   environment = { NODE_VERSION = "22.11.0" }
 
 [context.dev]
